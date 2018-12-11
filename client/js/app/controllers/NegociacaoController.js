@@ -27,15 +27,17 @@ class NegociacaoController{
 
   importarNegociacoes(){
     let service = new NegociacaoService();
-    service.obterNegociacoesDaSemana((err, negociacoes) =>{
-      if(err){
-        this._mensagem.texto = err;
-        return;
-      }
-
-      negociacoes.forEach(negociacao => this._listaNegociacoes.adiciona(negociacao));
-      this._mensagem.texto = 'Negociações importadas com sucesso';
-    });
+    Promise.all([service.obterNegociacoesDaSemana(),
+        service.obterNegociacoesDaSemanaAnterior(),
+        service.obterNegociacoesDaSemanaRetrasada()]
+      ).then(negociacoes => {
+        negociacoes
+          //array achatado é o que eu quero
+          .reduce((arrayAchatado, array) => arrayAchatado.concat(array), [] /* <- inicializacao*/)
+          .forEach(negociacao => this._listaNegociacoes.adiciona(negociacao));
+          this._mensagem.texto = 'Negociações importadas com sucesso';
+      })
+        .catch(err => this._mensagem.texto = err);
   }
 
   apaga(){
